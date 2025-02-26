@@ -5,3 +5,4 @@ python-decouple
 openai
 bcrypt
 jwt
+requests
