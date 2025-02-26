@@ -4,9 +4,9 @@ from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from decouple import config
 from starlette.responses import RedirectResponse
-
+from questions import  router as questions_router
 app = FastAPI()
-
+app.include_router(questions_router)
 # Retrieve MongoDB URI from environment variable
 mongo_uri = "mongodb+srv://xohack:w4BRF5QXTHUcbCPE@xohack-cluster.0asnq.mongodb.net/?retryWrites=true&w=majority&appName=xohack-cluster"
 
