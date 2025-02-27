@@ -6,6 +6,7 @@ import jwt
 import requests
 from decouple import config
 from fastapi import APIRouter, HTTPException
+from humanfriendly.terminal import message
 from pydantic import BaseModel
 from mongo import users_collection
 
@@ -24,6 +25,10 @@ class UserSignUp(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+class LinkedInLogin(BaseModel):
+    email: str
+    linked_in_url: str
 
 def hash_password(password: str):
     salt = bcrypt.gensalt()
@@ -115,3 +120,29 @@ def verify_jwt(token: str):
 def verify_token(token: str):
     """Verifies JWT token"""
     return {"message": "Token is valid", "user": verify_jwt(token)}
+
+@router.post("/linkedin_login")
+def addLinkedIn(user:LinkedInLogin):
+    linked_in_data = None
+    if user.linked_in_url:
+        try:
+            # Fetch LinkedIn data using Proxycurl API or any other service
+            linked_in_data = fetch_linked_in_data(user.linked_in_url)
+            print(linked_in_data)
+            if linked_in_data:
+                # Log the successful fetching of LinkedIn data
+                logging.info(f"Successfully fetched LinkedIn data for {user.linked_in_url}")
+            else:
+                logging.warning(f"No LinkedIn data found for {user.linked_in_url}")
+                raise HTTPException(status_code=404,detail="No LinkedIn data found for {user.linked_in_url}")
+        except Exception as e:
+            logging.error(f"Error processing LinkedIn URL {user.linked_in_url}: {e}")
+    users_collection.update_one(
+        {"email": user.email},  # Search by email
+        {"$set": {
+            "linked_in": user.linked_in_url,
+            "linked_in_data": linked_in_data
+        }},
+        upsert=True  # Insert if not exists
+    )
+    return {"message":"successfully data stored"}
