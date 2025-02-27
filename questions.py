@@ -1,4 +1,5 @@
 import openai
+import json
 from fastapi import FastAPI, HTTPException, APIRouter
 from pymongo import MongoClient
 from decouple import config
@@ -12,9 +13,10 @@ client = MongoClient(MONGO_URI)
 db = client["job_assessment"]
 responses_collection = db["responses"]
 
-# FastAPI router
+# OpenAI API Key
 openai.api_key = OPENAI_API_KEY
 
+# FastAPI Router
 router = APIRouter(prefix="/assessment", tags=["Assessment"])
 
 
@@ -25,27 +27,41 @@ def generate_questions(prompt: str):
             model="gpt-4",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.7,
-            max_tokens=500
+            max_tokens=1000
         )
-        return response.choices[0].message.content.strip().split("\n")
+
+        # Print raw response before parsing
+        raw_content = response.choices[0].message.content.strip()
+        print("Raw OpenAI Response:\n", raw_content)
+
+        # Ensure response is valid JSON
+        questions_json = json.loads(raw_content)  # Parse JSON
+        return questions_json if isinstance(questions_json, list) else []
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail=f"Invalid JSON format from OpenAI: {raw_content}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OpenAI Error: {str(e)}")
 
 
 @router.post("/start")
 def start_test(email_id: str, job_role: str):
-    """Start test and send the first psychometric question."""
+    """Start the test and provide the first psychometric question with options."""
     psychometric_prompt = """
-    Generate 7 psychometric questions that assess a candidate's personality and workplace behavior.
-    Questions should be diverse and relevant to professional settings.
-    Provide one question per line.
+    Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire).
+    Each question should have 4 answer choices labeled A, B, C, and D. Return questions as a valid JSON list:
+    [
+      {
+        "question": "Question text",
+        "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"]
+      }
+    ]
     """
+
     questions = generate_questions(psychometric_prompt)
 
-    if not questions or len(questions) < 7:
+    if not questions or len(questions) < 10:
         raise HTTPException(status_code=500, detail="Failed to generate psychometric questions.")
 
-    # Save questions in MongoDB
     responses_collection.insert_one({
         "email_id": email_id,
         "job_role": job_role,
@@ -57,131 +73,139 @@ def start_test(email_id: str, job_role: str):
     return {
         "message": "Test started",
         "question_number": 1,
-        "question": questions[0]
+        "question": questions[0]["question"],
+        "options": questions[0]["options"]
     }
-
 
 @router.post("/answer")
 def submit_answer(email_id: str, answer: str):
     """Receive an answer and send the next psychometric question."""
     user_data = responses_collection.find_one({"email_id": email_id})
-
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found or test not started.")
 
-    # Store the answer
     question_index = user_data["current_question_index"]
     user_data["psychometric_answers"].append(answer)
 
-    # If there are more questions, send the next one
-    if question_index < 6:
+    if question_index < 9:
         next_question = user_data["psychometric_questions"][question_index + 1]
         responses_collection.update_one(
             {"email_id": email_id},
             {"$set": {"psychometric_answers": user_data["psychometric_answers"],
                       "current_question_index": question_index + 1}}
         )
-        return {
-            "message": "Next question",
-            "question_number": question_index + 2,
-            "question": next_question
-        }
-
-    # If psychometric questions are done, start job-specific questions
+        return {"message": "Next question", "question_number": question_index + 2,
+                "question": next_question["question"], "options": next_question["options"]}
+    ans_formate='{"question": "Question text"}'
     job_prompt = f"""
-    Generate 5 job role-specific interview questions for a {user_data["job_role"]}.
-    These questions should assess technical skills, problem-solving, and domain knowledge.
-    Provide one question per line.
-    """
+        Generate 5 interview questions for a {user_data["job_role"]} role.
+        The questions should be open-ended (not MCQ) and assess technical knowledge and problem-solving skills.
+        Return questions in JSON format: {ans_formate}
+        """
+
     job_questions = generate_questions(job_prompt)
 
     if not job_questions or len(job_questions) < 5:
         raise HTTPException(status_code=500, detail="Failed to generate job-specific questions.")
 
+    formatted_job_questions = [{"question": q} for q in job_questions]
     responses_collection.update_one(
         {"email_id": email_id},
-        {"$set": {
-            "job_role_questions": job_questions,
-            "job_role_answers": [],
-            "current_job_question_index": 0
-        }}
+        {"$set": {"job_role_questions": formatted_job_questions, "job_role_answers": [],
+                  "current_job_question_index": 0}}
     )
 
-    return {
-        "message": "Psychometric test completed. Starting job-role-specific questions.",
-        "question_number": 1,
-        "question": job_questions[0]
-    }
+    return {"message": "Psychometric test completed. Starting job-role-specific questions.", "question_number": 1,
+            "question": formatted_job_questions[0]["question"]}
+
 
 
 @router.post("/job-answer")
 def submit_job_answer(email_id: str, answer: str):
-    """Receive job-role answer, send the next question, and store the final analysis result."""
+    """Receive job-role answer and send the next question or generate final analysis."""
     user_data = responses_collection.find_one({"email_id": email_id})
-
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found or test not started.")
 
-    # Store the job question answer
     job_question_index = user_data["current_job_question_index"]
-    user_data["job_role_answers"].append(answer)
+    responses_collection.update_one(
+        {"email_id": email_id},
+        {"$push": {"job_role_answers": answer}, "$inc": {"current_job_question_index": 1}}
+    )
 
-    # If there are more job questions, send the next one
+    # If more questions remain, return the next one
     if job_question_index < 4:
         next_question = user_data["job_role_questions"][job_question_index + 1]
-
-        responses_collection.update_one(
-            {"email_id": email_id},
-            {"$set": {
-                "job_role_answers": user_data["job_role_answers"],
-                "current_job_question_index": job_question_index + 1
-            }}
-        )
-
         return {
             "message": "Next question",
             "question_number": job_question_index + 2,
-            "question": next_question
+            "question": next_question["question"]
         }
 
-    # If all questions are answered, analyze the results
-    all_answers = user_data["psychometric_answers"] + user_data["job_role_answers"]
-
+    # Preparing structured analysis prompt
     analysis_prompt = f"""
-    Analyze the following psychometric and job-related answers and determine:
-    1. Top 3 skills with percentage.
-    2. Top 3 personality traits with percentage.
-    3. Top 3 areas of improvement with percentage.
+        Analyze the following assessment data and generate structured insights in valid JSON format.
 
-    Answers: {all_answers}
+        ### Psychometric Questions and Answers:
+        {json.dumps(user_data["psychometric_questions"], indent=2)}
 
-    Response Format:
-    Skills:
-    1. Skill Name : Percentage
-    2. Skill Name : Percentage
-    3. Skill Name : Percentage
+        ### Psychometric Answers:
+        {json.dumps(user_data["psychometric_answers"], indent=2)}
 
-    Personality Traits:
-    1. Trait Name : Percentage
-    2. Trait Name : Percentage
-    3. Trait Name : Percentage
+        ### Job Role-Specific Questions and Answers:
+        {json.dumps(user_data["job_role_questions"], indent=2)}
 
-    Areas of Improvement:
-    1. Area Name : Percentage
-    2. Area Name : Percentage
-    3. Area Name : Percentage
+        ### Job Role-Specific Answers:
+        {json.dumps(user_data["job_role_answers"], indent=2)}
+
+        ### Important Instructions:
+        - Return ONLY a valid JSON object—do NOT include extra text, explanations, or formatting.
+        - Ensure the output strictly follows this JSON structure:
+        {{
+            "overall_score": "XX%",
+            "top_skills": [
+                {{"skill": "Skill Name", "percentage": "XX%"}},
+                {{"skill": "Skill Name", "percentage": "XX%"}},
+                {{"skill": "Skill Name", "percentage": "XX%"}}
+            ],
+            "personality_traits": [
+                {{"trait": "Trait Name", "percentage": "XX%"}},
+                {{"trait": "Trait Name", "percentage": "XX%"}},
+                {{"trait": "Trait Name", "percentage": "XX%"}}
+            ],
+            "areas_of_improvement": [
+                {{"area": "Improvement Area", "percentage": "XX%"}},
+                {{"area": "Improvement Area", "percentage": "XX%"}},
+                {{"area": "Improvement Area", "percentage": "XX%"}}
+            ]
+        }}
+        - Ensure each section contains exactly three items.
+        - Percentages should be in "XX%" format based on logical inference from the data provided.
+        - DO NOT generate placeholder values—derive insights based on user answers.
     """
 
-    analysis = generate_questions(analysis_prompt)
+    print("Analysis Prompt:", analysis_prompt)  # Debugging
 
-    # Store final analysis results in MongoDB
-    responses_collection.update_one(
-        {"email_id": email_id},
-        {"$set": {"final_analysis": analysis, "test_completed": True}}
-    )
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": analysis_prompt}],
+            temperature=0.7,
+            max_tokens=1000
+        )
+        raw_content = response.choices[0].message.content.strip()
+        print("Raw OpenAI Response:", raw_content)
 
-    return {
-        "message": "Assessment Complete",
-        "analysis": analysis
-    }
+        # Parse response into JSON
+        analysis_dict = json.loads(raw_content)
+        if not isinstance(analysis_dict, dict):
+            raise ValueError("Invalid JSON format")
+    except (json.JSONDecodeError, ValueError) as e:
+        raise HTTPException(status_code=500, detail=f"Invalid OpenAI response: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(e)}")
 
+    # Store final analysis
+    responses_collection.update_one({"email_id": email_id}, {"$set": {"final_analysis": analysis_dict, "test_completed": True}})
+
+    return {"message": "Assessment Complete", "analysis": analysis_dict}
