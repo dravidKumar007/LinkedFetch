@@ -23,7 +23,16 @@ EMAIL_URL = "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elem
 class LinkedInLogin(BaseModel):
     email: str
     linked_in_url: str
+def fetch_linked_in_data(linked_in_url: str):
+    # Adjust API URL to accept the query parameter 'url'
+    api_url = "https://nubela.co/proxycurl/api/v2/linkedin"  # Adjust API URL without embedding LinkedIn URL in path
 
+    # Append the LinkedIn URL as a query parameter
+    params = {"url": linked_in_url}
+
+    headers = {
+        "Authorization": "Bearer SCHyqcvtE_JyodZvD2-uag"  # Use the actual API key
+    }
 
 @router.get("/redirecturl")
 def redirecturl():
