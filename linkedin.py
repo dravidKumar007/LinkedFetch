@@ -14,7 +14,7 @@ router = APIRouter(prefix="/linkedin", tags=["linkedin"])
 
 CLIENT_ID = config("LINKEDIN_CLIENT_ID")
 CLIENT_SECRET = config("LINKEDIN_CLIENT_SECRET")
-REDIRECT_URI = "http://localhost:8000/linkedin/callback"
+REDIRECT_URI = "https://linkedfetch.onrender.com/linkedin/callback"
 TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 PROFILE_URL = "https://api.linkedin.com/v2/userinfo"
 EMAIL_URL = "https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))"
