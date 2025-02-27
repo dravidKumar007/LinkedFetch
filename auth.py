@@ -6,7 +6,6 @@ import jwt
 import requests
 from decouple import config
 from fastapi import APIRouter, HTTPException
-from humanfriendly.terminal import message
 from pydantic import BaseModel
 from mongo import users_collection
 
