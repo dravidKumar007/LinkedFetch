@@ -81,7 +81,7 @@ def linkedin_callback(request: Request):
 
 
     return {
-        RedirectResponse("https://localhost:3000/upload-details/"+profile_data['email'])
+        RedirectResponse("http://localhost:3000/upload-details/"+profile_data['email'])
     }
 
 
