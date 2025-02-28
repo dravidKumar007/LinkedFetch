@@ -24,7 +24,7 @@ def generate_questions(prompt: str):
     """Generates a set of questions dynamically using OpenAI"""
     try:
         response = openai.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.7,
             max_tokens=1000
@@ -188,7 +188,7 @@ def submit_job_answer(email_id: str, answer: str):
 
     try:
         response = openai.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[{"role": "system", "content": analysis_prompt}],
             temperature=0.7,
             max_tokens=1000
