@@ -45,7 +45,7 @@ def redirecturl():
          "&scope=+profile+email"
      )
 
-     return RedirectResponse("https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=86etlqmbc98tmt&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Flinkedin%2Fcallback&scope=profile%20email%20openid")
+     return RedirectResponse("https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=86etlqmbc98tmt&redirect_uri=https%3A%2F%2Flinkedfetch.onrender.com%2Flinkedin%2Fcallback&scope=profile%20email%20openid")
 
 @router.get("/callback")
 def linkedin_callback(request: Request):
