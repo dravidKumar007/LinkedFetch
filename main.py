@@ -8,6 +8,8 @@ from starlette.responses import RedirectResponse
 from questions import router as questions_router
 from auth import router as auth_router
 from linkedin import router as Linked_in_router
+from Resume import router as Resume_router
+
 
 app = FastAPI()
 
@@ -23,6 +25,8 @@ app.add_middleware(
 app.include_router(questions_router)
 app.include_router(auth_router)
 app.include_router(Linked_in_router)
+app.include_router(Resume_router)
+
 # Retrieve MongoDB URI from environment variable
 mongo_uri = "mongodb+srv://xohack:w4BRF5QXTHUcbCPE@xohack-cluster.0asnq.mongodb.net/?retryWrites=true&w=majority&appName=xohack-cluster"
 
