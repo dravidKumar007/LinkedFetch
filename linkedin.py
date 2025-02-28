@@ -80,9 +80,8 @@ def linkedin_callback(request: Request):
 
 
 
-    return {
-        RedirectResponse("https://xohack-2025-frontend.onrender.com/upload-details/"+profile_data['email'])
-    }
+    return RedirectResponse("https://xohack-2025-frontend.onrender.com/upload-details/"+profile_data['email'])
+    
 
 
 @router.get("/profile/{email}")
