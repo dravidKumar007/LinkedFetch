@@ -46,7 +46,7 @@ def generate_questions(prompt: str):
 @router.post("/start")
 def start_test(email_id: str, job_role: str):
     """Start the test and provide the first psychometric question with options."""
-    prompt = """
+    psychometric_prompt= """
     Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire).  
     Each question must assess a specific personality trait from the 16PF model.  
     
