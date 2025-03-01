@@ -1,4 +1,4 @@
-    import openai
+import openai
 import json
 from fastapi import FastAPI, HTTPException, APIRouter
 from pymongo import MongoClient
