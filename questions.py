@@ -46,40 +46,28 @@ def generate_questions(prompt: str):
 @router.post("/start")
 def start_test(email_id: str, job_role: str):
     """Start the test and provide the first psychometric question with options."""
-   psychometric_prompt = """Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire). 
-    ### Requirements:
-    1. Each question should assess a different personality trait from the 16PF model (e.g., extraversion, anxiety, independence, conscientiousness).
-    2. Questions should be neutral, clear, and relevant to personality assessment.
-    3. Each question must have exactly 4 answer choices labeled A, B, C, and D.
-    4. The answer choices should follow a **Likert scale format**:  
-   - A. Strongly Agree  
-   - B. Agree  
-   - C. Disagree  
-   - D. Strongly Disagree  
-
-    ### Output Format:
-    Return the questions as a valid JSON list:
-    ```json
+    prompt = """
+    Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire).  
+    Each question must assess a specific personality trait from the 16PF model.  
+    
+    **Requirements:**  
+    - Each question must have exactly four answer choices.  
+    - Answer choices should be labeled **A, B, C, and D**.  
+    - The output **must be a valid JSON list** and strictly follow this format:  
+    
+    **Format**
     [
       {
-        "question": "Do you enjoy social interactions and large gatherings?",
-        "options": [
-          "A. Strongly Agree",
-          "B. Agree",
-          "C. Disagree",
-          "D. Strongly Disagree"
-        ]
-      },
-      {
-        "question": "You prefer structured routines over spontaneous activities.",
-        "options": [
-          "A. Strongly Agree",
-          "B. Agree",
-          "C. Disagree",
-          "D. Strongly Disagree"
-        ]
+        "question": "Question text",
+        "options": ["A. Option 1", "B. Option 2", "C. Option 3", "D. Option 4"]
       }
     ]
+    
+    
+    Output Rules:
+    
+    Return only the JSON output.
+    Do not include any explanations, descriptions, or additional text—only the JSON list.
     """
 
     questions = generate_questions(psychometric_prompt)
