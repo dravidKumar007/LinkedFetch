@@ -47,7 +47,7 @@ def generate_questions(prompt: str):
 def start_test(email_id: str, job_role: str):
     """Start the test and provide the first psychometric question with options."""
     psychometric_prompt= """
-    Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire).  
+       Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire).  
     Each question must assess a specific personality trait from the 16PF model.  
     
     **Requirements:**  
@@ -63,11 +63,11 @@ def start_test(email_id: str, job_role: str):
       }
     ]
     
-    
-    Output Rules:
-    
-    Return only the JSON output.
-    Do not include any explanations, descriptions, or additional text—only the JSON list.
+    **Output Rules:**  
+    - Return only the JSON output.  
+    - Do not include any explanations, descriptions, or additional text—only the JSON list.  
+    - Ensure the JSON is properly formatted so that `json.loads()` in python can correctly parse it.  
+
     """
 
     questions = generate_questions(psychometric_prompt)
