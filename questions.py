@@ -24,7 +24,7 @@ def generate_questions(prompt: str):
     """Generates a set of questions dynamically using OpenAI"""
     try:
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[{"role": "system", "content": prompt}],
             temperature=0.7,
             max_tokens=1000
