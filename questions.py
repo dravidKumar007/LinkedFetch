@@ -1,4 +1,4 @@
-import openai
+    import openai
 import json
 from fastapi import FastAPI, HTTPException, APIRouter
 from pymongo import MongoClient
@@ -47,41 +47,40 @@ def generate_questions(prompt: str):
 def start_test(email_id: str, job_role: str):
     """Start the test and provide the first psychometric question with options."""
    psychometric_prompt = """Generate 10 multiple-choice psychometric questions based on the 16PF (Sixteen Personality Factor Questionnaire). 
-
-### Requirements:
-1. Each question should assess a different personality trait from the 16PF model (e.g., extraversion, anxiety, independence, conscientiousness).
-2. Questions should be neutral, clear, and relevant to personality assessment.
-3. Each question must have exactly 4 answer choices labeled A, B, C, and D.
-4. The answer choices should follow a **Likert scale format**:  
+    ### Requirements:
+    1. Each question should assess a different personality trait from the 16PF model (e.g., extraversion, anxiety, independence, conscientiousness).
+    2. Questions should be neutral, clear, and relevant to personality assessment.
+    3. Each question must have exactly 4 answer choices labeled A, B, C, and D.
+    4. The answer choices should follow a **Likert scale format**:  
    - A. Strongly Agree  
    - B. Agree  
    - C. Disagree  
    - D. Strongly Disagree  
 
-### Output Format:
-Return the questions as a valid JSON list:
-```json
-[
-  {
-    "question": "Do you enjoy social interactions and large gatherings?",
-    "options": [
-      "A. Strongly Agree",
-      "B. Agree",
-      "C. Disagree",
-      "D. Strongly Disagree"
+    ### Output Format:
+    Return the questions as a valid JSON list:
+    ```json
+    [
+      {
+        "question": "Do you enjoy social interactions and large gatherings?",
+        "options": [
+          "A. Strongly Agree",
+          "B. Agree",
+          "C. Disagree",
+          "D. Strongly Disagree"
+        ]
+      },
+      {
+        "question": "You prefer structured routines over spontaneous activities.",
+        "options": [
+          "A. Strongly Agree",
+          "B. Agree",
+          "C. Disagree",
+          "D. Strongly Disagree"
+        ]
+      }
     ]
-  },
-  {
-    "question": "You prefer structured routines over spontaneous activities.",
-    "options": [
-      "A. Strongly Agree",
-      "B. Agree",
-      "C. Disagree",
-      "D. Strongly Disagree"
-    ]
-  }
-]
-"""
+    """
 
     questions = generate_questions(psychometric_prompt)
 
